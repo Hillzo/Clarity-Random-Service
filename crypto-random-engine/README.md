@@ -1,6 +1,6 @@
-# Random Number Generator Smart Contract
+# Stacks-Optimized Random Number Generator Smart Contract
 
-A secure and feature-rich random number generator implemented as a Clarity smart contract for the Stacks blockchain. This contract provides various random number generation capabilities with built-in security measures, administrative controls, and usage monitoring.
+A secure and gas-optimized random number generator implemented as a Clarity smart contract for the Stacks blockchain. This contract provides various random number generation capabilities with built-in security measures, administrative controls, and a commit-reveal scheme for enhanced randomness.
 
 ## Features
 
@@ -8,139 +8,204 @@ A secure and feature-rich random number generator implemented as a Clarity smart
 - Generate single random numbers
 - Generate random numbers within a specified range
 - Generate random sequences
-- Generate percentage values (0-100)
-- Entropy pool management
-- Historical tracking of generated numbers
+- Commit-reveal scheme for user-provided randomness
+- Entropy mixing with block hashes
 
 ### Security Measures
 - Address restriction system
 - Generation cooldown periods
-- Minimum entropy threshold requirements
 - Owner-only administrative functions
 - Maintenance mode for emergency stops
-- Usage monitoring and statistics
+- Commit-reveal timeout
 
 ## Constants
 
 ### System Limits
-- Maximum sequence length: 100
-- Minimum entropy threshold: 10
-- Generation cooldown period: 10 blocks
+- Maximum sequence length: 50
+- Generation cooldown period: 3 blocks
 - Maximum random range: 1,000,000
-- Maximum entropy input: 1,000,000
+- Commit-reveal timeout: 144 blocks (~24 hours)
 
 ### Error Codes
-- `u100`: Unauthorized access
+- `u100`: Unauthorized access (owner only)
 - `u101`: Invalid range bounds
-- `u102`: Zero seed value
-- `u103`: Invalid generation parameters
-- `u104`: Random sequence overflow
-- `u105`: Sequence length exceeded
-- `u106`: Generation cooldown active
-- `u107`: Address blacklisted
-- `u108`: Insufficient entropy pool
-- `u109`: System maintenance mode
-- `u110`: Metrics storage failed
-- `u111`: Malformed address
-- `u112`: Entropy value out of bounds
+- `u102`: Invalid parameters
+- `u103`: Sequence overflow
+- `u104`: Generation cooldown active
+- `u105`: Address blacklisted
+- `u106`: Low entropy
+- `u107`: System maintenance mode
+- `u108`: Commit-reveal timeout
+- `u109`: Invalid reveal
+- `u110`: Invalid commitment
+- `u111`: Invalid address
 
 ## Public Functions
 
 ### Random Number Generation
 ```clarity
-(generate-random-number)
-(generate-random-range (min-value uint) (max-value uint))
-(generate-random-sequence (sequence-size uint))
-(generate-percentage)
+(get-random)
+(get-random-range (min-value uint) (max-value uint))
+(get-random-sequence (size uint))
+Thought for 3 secondsTo provide an updated README for this smart contract, I'll use a Markdown code block. This will allow for proper formatting of the documentation, including headers, code snippets, and lists.
+
+```markdown
+# Stacks-Optimized Random Number Generator Smart Contract
+
+A secure and gas-optimized random number generator implemented as a Clarity smart contract for the Stacks blockchain. This contract provides various random number generation capabilities with built-in security measures, administrative controls, and a commit-reveal scheme for enhanced randomness.
+
+## Features
+
+### Core Functionality
+- Generate single random numbers
+- Generate random numbers within a specified range
+- Generate random sequences
+- Commit-reveal scheme for user-provided randomness
+- Entropy mixing with block hashes
+
+### Security Measures
+- Address restriction system
+- Generation cooldown periods
+- Owner-only administrative functions
+- Maintenance mode for emergency stops
+- Commit-reveal timeout
+
+## Constants
+
+### System Limits
+- Maximum sequence length: 50
+- Generation cooldown period: 3 blocks
+- Maximum random range: 1,000,000
+- Commit-reveal timeout: 144 blocks (~24 hours)
+
+### Error Codes
+- `u100`: Unauthorized access (owner only)
+- `u101`: Invalid range bounds
+- `u102`: Invalid parameters
+- `u103`: Sequence overflow
+- `u104`: Generation cooldown active
+- `u105`: Address blacklisted
+- `u106`: Low entropy
+- `u107`: System maintenance mode
+- `u108`: Commit-reveal timeout
+- `u109`: Invalid reveal
+- `u110`: Invalid commitment
+- `u111`: Invalid address
+
+## Public Functions
+
+### Random Number Generation
+```
+(get-random)
+(get-random-range (min-value uint) (max-value uint))
+(get-random-sequence (size uint))
+```
+
+### Commit-Reveal Scheme
+
+```
+(commit-random (commitment (buff 32)))
+(reveal-random (random-value (buff 32)))
 ```
 
 ### Administrative Functions
-```clarity
-(toggle-maintenance-mode)
-(restrict-address (target-address principal))
-(remove-address-restriction (target-address principal))
-(add-entropy-to-pool (entropy-input uint))
+
+```
+(set-maintenance-mode (mode bool))
+(add-restricted-address (address principal))
+(remove-restricted-address (address principal))
 ```
 
 ### Read-Only Functions
-```clarity
-(get-current-random-number)
-(get-generation-count)
-(get-contract-status)
-(get-user-total-generations (user-address principal))
-(check-address-restrictions (target-address principal))
+
+```
+(get-last-random)
+(get-commitment (user principal))
+(is-restricted (address principal))
 ```
 
 ## Usage Examples
 
 ### Generate a Random Number
-```clarity
-(contract-call? .random-number-generator generate-random-number)
+
+```
+(contract-call? .random-number-generator get-random)
 ```
 
 ### Generate a Random Number in Range
-```clarity
+
+```
 ;; Generate a random number between 1 and 100
-(contract-call? .random-number-generator generate-random-range u1 u100)
+(contract-call? .random-number-generator get-random-range u1 u100)
 ```
 
 ### Generate a Random Sequence
-```clarity
+
+```
 ;; Generate a sequence of 5 random numbers
-(contract-call? .random-number-generator generate-random-sequence u5)
+(contract-call? .random-number-generator get-random-sequence u5)
 ```
 
-### Generate a Percentage
-```clarity
-(contract-call? .random-number-generator generate-percentage)
+### Commit-Reveal Process
+
+```
+;; Step 1: Commit a hash of your random value
+(contract-call? .random-number-generator commit-random (sha256 0x1234...))
+
+;; Step 2: Reveal your random value (must be done within 144 blocks)
+(contract-call? .random-number-generator reveal-random 0x1234...)
 ```
 
 ## Security Considerations
 
-1. **Entropy Management**: The contract maintains an entropy pool that must be above the minimum threshold for generation to work. Users can contribute to the entropy pool using `add-entropy-to-pool`.
-
-2. **Cooldown Periods**: To prevent abuse, there's a mandatory cooldown period between generations.
-
+1. **Commit-Reveal Scheme**: Enhances randomness by allowing users to contribute their own random values.
+2. **Cooldown Periods**: Prevents rapid consecutive generations to mitigate potential exploits.
 3. **Address Restrictions**: Contract owner can restrict malicious addresses from using the generator.
-
 4. **Maintenance Mode**: Contract can be paused by the owner in case of emergencies.
+5. **VRF Approach**: Uses a Verifiable Random Function approach for generating random numbers.
+
 
 ## State Management
 
 The contract maintains several state variables:
-- Current random number
-- Generation count
-- Cryptographic seed
-- Available entropy
-- Maintenance mode status
-- Last generation timestamp
-- Total random generations
-- User generation statistics
-- Historical random numbers
+
+- Last generated random number
+- Current cryptographic seed
+- Last block of generation
+- Commitments map for the commit-reveal scheme
+- Restricted addresses map
+- Generation statistics map
+
 
 ## Implementation Notes
 
 1. The random number generation uses a combination of:
-   - Block height
-   - Previous generation count
-   - Available entropy
-   - Cryptographic seed
-   
-2. All generated numbers are stored in the historical records for transparency.
 
-3. User statistics are automatically updated with each generation.
+. User-provided randomness (via commit-reveal)
+. Block hashes
+. Previous seed
+
+2. The contract is optimized for gas efficiency, with reduced sequence length and cooldown period.
+3. A zero buffer is used for initialization and validation.
+
 
 ## Owner Responsibilities
 
 The contract owner should:
-1. Monitor the entropy pool levels
-2. Manage address restrictions as needed
-3. Toggle maintenance mode during emergencies
-4. Monitor usage patterns for potential abuse
+
+1. Manage address restrictions as needed
+2. Toggle maintenance mode during emergencies
+3. Monitor usage patterns for potential abuse
+
 
 ## Limitations
 
-1. Maximum sequence length is capped at 100 numbers
+1. Maximum sequence length is capped at 50 numbers
 2. Random range generation is limited to a maximum range of 1,000,000
-3. Entropy contributions are capped at 1,000,000 per transaction
-4. Generation requires waiting for the cooldown period between requests
+3. Commit-reveal process must be completed within 144 blocks (~24 hours)
+4. Generation requires waiting for a 3-block cooldown period between requests
+
+
+```
+This updated README reflects the changes in the new smart contract implementation
+```
